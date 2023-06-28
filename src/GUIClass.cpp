@@ -17,11 +17,14 @@ void GUIClass::Start()
     _guiView = HOME_VIEW;
     _btMode = TRANSMITTER_M;
     _sleepMode = SLEEP_30S;
+    _sleepPeriod = 30 * 1000;
+
+    _lastTouch = millis();
 }
 
 /**
  * Starts the ili9488 16bit screen and creates the sprites
-*/
+ */
 void GUIClass::InitLcd()
 {
     pinMode(LCD_CS, OUTPUT);
@@ -46,7 +49,7 @@ void GUIClass::InitLcd()
 
 /**
  * Creates all the buttons used in the GUI.
-*/
+ */
 void GUIClass::InitButtons()
 {
     // create the volume and mute button
@@ -73,7 +76,7 @@ void GUIClass::InitButtons()
 
 /**
  * Draws the buttons on the screen based on the current view.
-*/
+ */
 void GUIClass::DrawButtons()
 {
     _buttons[VOL_UP_B].drawButton();
@@ -106,7 +109,7 @@ void GUIClass::DrawButtons()
 
 /**
  * Displays the current bluetooth mode the device is i
-*/
+ */
 void GUIClass::ShowBTMode()
 {
     _lcd.setTextSize(1);
@@ -126,7 +129,7 @@ void GUIClass::ShowBTMode()
 
 /**
  * Starts the gpio expander and sets pinmode as output and to low
-*/
+ */
 void GUIClass::InitPCF()
 {
     gpio.begin();
@@ -142,7 +145,7 @@ void GUIClass::InitPCF()
  * screen and checks if any touches occur and if so if they are within a button. If button
  * press occurs its flag is set and is then serviced in justPressed which then handles
  * each button accordingly.
-*/
+ */
 void GUIClass::CheckButtonPress()
 {
     int touch[2] = {0, 0};
@@ -150,10 +153,15 @@ void GUIClass::CheckButtonPress()
     bool pressed = _tScreen.getTouchPair(touch);
     if (pressed && _lcdState == DISPLAY_OFF)
     {
-        digitalWrite(LCD_POWER_PIN, HIGH);
-        _lcdState = DISPLAY_ON;
-        _lastTouch = millis();
-        delay(500);
+        // screen debouncing
+        delay(50);
+        if (_tScreen.getTouchPair(touch))
+        {
+            digitalWrite(LCD_POWER_PIN, HIGH);
+            _lcdState = DISPLAY_ON;
+            _lastTouch = millis();
+            delay(500);
+        }
     }
     else
     {
@@ -162,6 +170,7 @@ void GUIClass::CheckButtonPress()
             // if button press chekc
             if (pressed && _buttons[bttn].contains(touch[0], touch[1]))
             {
+                // button debouncing, removes ghost clicks from happening
                 delay(50);
                 pressed = _tScreen.getTouchPair(touch);
                 if (pressed && _buttons[bttn].contains(touch[0], touch[1]))
@@ -303,14 +312,19 @@ void GUIClass::ButtonCallback(BUTTON_NAMES &pressed)
     else if (pressed == DISP_OPT_30S_B)
     {
         DisplayMenuMessage("Sleep 30s");
+        _sleepPeriod = 30 * 1000;
+        _sleepMode = SLEEP_30S;
     }
     else if (pressed == DISP_OPT_5M_B)
     {
         DisplayMenuMessage("Sleep 5m");
+        _sleepPeriod = 5 * 60 * 1000;
+        _sleepMode = SLEEP_5M;
     }
     else if (pressed == DISP_OPT_OFF_B)
     {
         DisplayMenuMessage("Sleep off");
+        _sleepMode = SLEEP_OFF;
     }
     else
     {
@@ -323,9 +337,9 @@ void GUIClass::ButtonCallback(BUTTON_NAMES &pressed)
 }
 
 /**
- * Refreshes the GUI if data needs to de drawn on a cyclic period. 
+ * Refreshes the GUI if data needs to de drawn on a cyclic period.
  * IE the top messages when button are pressed and the gauges used.
-*/
+ */
 void GUIClass::RefreshData()
 {
     // check message if we need to cover
@@ -334,11 +348,26 @@ void GUIClass::RefreshData()
         _messageOn = false;
         _lcd.fillRect(200, 0, 230, 13, BG_COLOR);
     }
+
+    // check if we need to turn the screen off
+    if (_lcdState == DISPLAY_ON && _sleepMode != SLEEP_OFF)
+    {
+        if (_sleepMode == SLEEP_30S && millis() - _lastTouch > (30 * 1000))
+        {
+            digitalWrite(LCD_POWER_PIN, LOW);
+            _lcdState = DISPLAY_OFF;
+        }
+        else if (_sleepMode == SLEEP_5M  && millis() - _lastTouch > (5*60 * 1000))
+        {
+            digitalWrite(LCD_POWER_PIN, LOW);
+            _lcdState = DISPLAY_OFF;
+        }
+    }
 }
 
 /**
  * Displays a messages to the top menu bar of the GUI.
-*/
+ */
 void GUIClass::DisplayMenuMessage(String message)
 {
     _lcd.setTextSize(1);
@@ -352,7 +381,7 @@ void GUIClass::DisplayMenuMessage(String message)
 
 /**
  * Draws the menu bar to the GUI
-*/
+ */
 void GUIClass::DrawMenu()
 {
     _lcd.setTextColor(TFT_WHITE);
@@ -418,7 +447,7 @@ void GUIClass::CheckQueue()
                     gpio.digitalWrite(VOL_DOWN_PIN, HIGH);
                     delay(200);
                     gpio.digitalWrite(VOL_DOWN_PIN, LOW);
-                    xQueueReceive(_queue,&newVal,0);
+                    xQueueReceive(_queue, &newVal, 0);
                 }
             }
         }
@@ -440,7 +469,7 @@ void GUIClass::CheckQueue()
                     gpio.digitalWrite(VOL_UP_PIN, HIGH);
                     delay(200);
                     gpio.digitalWrite(VOL_UP_PIN, LOW);
-                    xQueueReceive(_queue,&newVal,0);
+                    xQueueReceive(_queue, &newVal, 0);
                 }
             }
         }
@@ -467,7 +496,7 @@ void GUIClass::CheckQueue()
                     gpio.digitalWrite(RCX_PIN, HIGH);
                     delay(200);
                     gpio.digitalWrite(RCX_PIN, LOW);
-                    xQueueReceive(_queue,&newVal,0);
+                    xQueueReceive(_queue, &newVal, 0);
                 }
             }
         }
@@ -489,7 +518,7 @@ void GUIClass::CheckQueue()
                     gpio.digitalWrite(TRX_PIN, HIGH);
                     delay(200);
                     gpio.digitalWrite(TRX_PIN, LOW);
-                    xQueueReceive(_queue,&newVal,0);
+                    xQueueReceive(_queue, &newVal, 0);
                 }
             }
         }
@@ -507,9 +536,9 @@ void GUIClass::CheckQueue()
 }
 
 /**
- * Checks if the button pressed is a settings view button. 
+ * Checks if the button pressed is a settings view button.
  * This means is a button that is visible only when in the settings tab.
-*/
+ */
 bool GUIClass::IsSettingsButtons(BUTTON_NAMES pressed)
 {
     if (pressed == PAIR_B)
@@ -575,4 +604,11 @@ bool GUIClass::IsTabButtons(BUTTON_NAMES pressed)
         return true;
     }
     return false;
+}
+
+/**
+ * Draws the voltage gauge to the screen
+ */
+void GUIClass::DrawVoltageGauge()
+{
 }

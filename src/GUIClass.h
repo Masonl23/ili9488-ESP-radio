@@ -158,21 +158,31 @@ public:
     // performs the necessary actions for a buton press
     void ButtonCallback(BUTTON_NAMES &pressed);
 
+    // checks if button is settings view button
     bool IsSettingsButtons(BUTTON_NAMES pressed);
-
+    
+    // checks if button is home view button
     bool IsHomeButtons(BUTTON_NAMES pressed);
 
+    // checks if button is a tab 
     bool IsTabButtons(BUTTON_NAMES pressed);
 
+    // checks if theres anything in queue and services it
     void CheckQueue();
 
+    // draws the menu to the lcd
     void DrawMenu();
 
+    // shows the current bt mode 
     void ShowBTMode();
 
+    // displays content to the screen for short bursts
     void DisplayMenuMessage(String message);
 
+    // refreshes gauges and other live data to screen based on periods
     void RefreshData();
+
+    void DrawVoltageGauge();
 
 private:
     // internal members
@@ -198,6 +208,8 @@ private:
 
     // starts gpio expansion board
     void InitPCF();
+
+    ulong _sleepPeriod = 0;
 
     ulong _lastTouch = 0;
     // TwoWire gpioWire = TwoWire(0);
