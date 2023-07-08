@@ -19,6 +19,7 @@ GUIClass gui;
 void setup()
 {
   Serial.begin(115200);
+  vTaskDelay(1);
   xTaskCreatePinnedToCore(GUIloop, "GUIHelper", 16000, NULL, 1, &TFThelper, 1);
   delay(500);
   xTaskCreatePinnedToCore(WiFiloop, "WiFiHelper", 16000, NULL, 0, &WifiHelper, 0);
@@ -41,19 +42,20 @@ void GUIloop(void *param){
       gui.CheckButtonPress();
 
       gui.RefreshData();
+      vTaskDelay(1);
     }
 }
 
 void WiFiloop(void *param){
 
-  // TIMERG0.wdtwprotect = TIMG_WDT_WKEY_VALUE;       // prevent watchdog from crashing program!
-  // TIMERG0.wdtfeed = 1;
-  // TIMERG0.wdtwprotect = 0;
+  // TIMERG1.wdtwprotect = TIMG_WDT_WKEY_VALUE;       // prevent watchdog from crashing program!
+  // TIMERG1.wdtfeed = 1;
+  // TIMERG1.wdtwprotect = 0;
+  
 
     while(true){
       gui.CheckQueue();
-
-      delay(1);
+      vTaskDelay(1);
     }
 }
 

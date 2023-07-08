@@ -1,16 +1,18 @@
-#include "FT6236.h"
 #include "Parallel16_9488.h"
 #include "T_FT6236.h"
+#include "INA226.h"
 #include "PCF8574.h"
+#include "Wire.h"
 
 // Definitons of current screen
 #define SCREEN_WIDTH 479
 #define SCREEN_HEIGHT 319
 
 // S denoting settings tab
-#define S_ROW_1 95                      // Settings row 1 y pos
+#define S_ROW_1 78                      // Settings row 1 y pos
 #define S_ROW_2 S_ROW_1 + S_B_ROW_SPACE // Settings row 2 y pos
-#define S_B_ROW_SPACE 80                // spacing between rows
+#define S_ROW_3 S_ROW_2 + S_B_ROW_SPACE // Settings row 3 y pos
+#define S_B_ROW_SPACE 75                // spacing between rows
 
 #define S_COL_1 TAB_COL_HOME - 15     // Settings col 1 x pos
 #define S_COL_2 S_COL_1 + S_COL_SPACE // Settings col 2 x pos
@@ -53,6 +55,11 @@
 #define SPRITE_GUAGE_WIDTH 146
 #define SPRITE_GUAGE_HEIGHT 21
 
+#define SPRITE_BATTERY_SIZE 140
+#define SPRITE_BAT_IN_R     48
+#define SPRITE_BAT_OUT_R    65 
+
+
 // color definitions
 #define BG_COLOR TFT_BLACK
 
@@ -60,9 +67,13 @@
 #define LCD_POWER_PIN 45
 #define I2C_SCL 39
 #define I2C_SDA 38
-#define TOUCH_I2C_ADD   0x38
 
+// I2C addressed
+#define TOUCH_I2C_ADD   0x38
 #define PCF_I2C_ADD     0x24
+#define INA226_ADD      0x40
+
+#define LCD_BRIGHTNESS_CHANNEL 7
 
 class GUIClass
 {
@@ -83,6 +94,9 @@ public:
         DISP_OPT_30S_B,
         DISP_OPT_5M_B,
         DISP_OPT_OFF_B,
+        BRIGHT_DOWN_B,
+        BRIGHT_UP_B,
+        BRIGHT_RESET_B,
 
         NUM_BUTTONS
     };
@@ -142,10 +156,6 @@ public:
         NUM_SLEEP_MODE
     };
 
-    // GUIClass();
-    // ~gui
-
-
     // checks if there is any new buttons presses
     void CheckButtonPress();
 
@@ -182,7 +192,9 @@ public:
     // refreshes gauges and other live data to screen based on periods
     void RefreshData();
 
-    void DrawVoltageGauge();
+    // recreates the guages onto the screen
+    void DrawVoltageGauge(float voltageInput);
+    void DrawCurrentGauge(float voltageInput);
 
 private:
     // internal members
@@ -194,13 +206,15 @@ private:
     SLEEP_MODES _sleepMode;
     T_FT6236 _tScreen;
 
-
+    // used for displaying messages
     bool _messageOn = false;
     ulong _messageTime = 0;
-    // sprites
-    LGFX_Sprite _battery1Sprite;
-    LGFX_Sprite _battery2Sprite;
 
+    // sprites used for guages
+    LGFX_Sprite _spriteBattery;
+    LGFX_Sprite _spriteCurrent;
+
+    // starts the LCD panel
     void InitLcd();
 
     // creates the buttons
@@ -209,14 +223,29 @@ private:
     // starts gpio expansion board
     void InitPCF();
 
+    // starts current sensor module
+    void InitINA226();
+
+    // changes the brightness of screen
+    void ChangeBrightness();
+
+    // period used to determine how long to sleep after last touch
     ulong _sleepPeriod = 0;
 
+    // time the last touch occured
     ulong _lastTouch = 0;
-    // TwoWire gpioWire = TwoWire(0);
-    // TwoWire touchWire = TwoWire(1);
 
+    // time last graphic update occured
+    ulong _lastGraphics = 0;
+
+    // current brightness of display, default to 100
+    uint32_t _lcdBrightness = 100;
+
+    // define external peripherals
     PCF8574 gpio = PCF8574(PCF_I2C_ADD,18,17);
+    INA226 _powerSensor = INA226(INA226_ADD,&Wire1);
 
+    // queue used for sending button presses across cores
     QueueHandle_t _queue = xQueueCreate(20, sizeof(int));
 
     double mapf(double val, double inMin, double inMax, double outMin, double outMax);

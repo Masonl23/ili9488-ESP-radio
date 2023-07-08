@@ -5,13 +5,6 @@
  */
 void GUIClass::Start()
 {
-    InitLcd();
-    InitButtons();
-    DrawButtons();
-    InitPCF();
-    DrawMenu();
-    ShowBTMode();
-
     // set starting enum values
     _lcdState = DISPLAY_ON;
     _guiView = HOME_VIEW;
@@ -19,7 +12,41 @@ void GUIClass::Start()
     _sleepMode = SLEEP_30S;
     _sleepPeriod = 30 * 1000;
 
+    // start the peripherals
+    InitLcd();
+    InitPCF();
+    InitINA226();
+
+    // start the buttons draw menus
+    InitButtons();
+    DrawButtons();
+    DrawMenu();
+    ShowBTMode();
+
     _lastTouch = millis();
+
+    if (_powerSensor.isConnected())
+    {
+        DisplayMenuMessage("INA connected");
+    }
+    else
+    {
+        DisplayMenuMessage("INA failed");
+    }
+    _messageTime += 500;
+
+    // start the LEDC channel to control brightness
+    ledcSetup(LCD_BRIGHTNESS_CHANNEL, 5000, 8);
+    ledcAttachPin(LCD_POWER_PIN, LCD_BRIGHTNESS_CHANNEL);
+    ledcWrite(LCD_BRIGHTNESS_CHANNEL, 255); // default full bright
+}
+
+void GUIClass::InitINA226()
+{
+    // _powerSensor = new INA226(INA226_ADD,&Wire1);
+    _powerSensor.begin();
+    _powerSensor.setAverage(1);
+    _powerSensor.setMaxCurrentShunt(.8, 0.1, false);
 }
 
 /**
@@ -27,6 +54,8 @@ void GUIClass::Start()
  */
 void GUIClass::InitLcd()
 {
+    _tScreen.Begin();
+    _tScreen.setOrientation(3);
     pinMode(LCD_CS, OUTPUT);
     pinMode(LCD_BLK, OUTPUT);
 
@@ -36,15 +65,11 @@ void GUIClass::InitLcd()
     _lcd.init();
     _lcd.setRotation(3);
     _lcd.fillScreen(BG_COLOR);
-
     _lcd.clearDisplay();
-    _tScreen.setOrientation(3);
 
-    // init the sprites
-    _battery1Sprite = LGFX_Sprite(&_lcd);
-    _battery2Sprite = LGFX_Sprite(&_lcd);
-    _battery1Sprite.createSprite(SPRITE_GUAGE_WIDTH, SPRITE_GUAGE_HEIGHT);
-    _battery2Sprite.createSprite(SPRITE_GUAGE_WIDTH, SPRITE_GUAGE_HEIGHT);
+
+    _spriteBattery.createSprite(SPRITE_BATTERY_SIZE + 4, SPRITE_BATTERY_SIZE + 4);
+    _spriteCurrent.createSprite(SPRITE_BATTERY_SIZE + 4, SPRITE_BATTERY_SIZE + 4);
 }
 
 /**
@@ -72,6 +97,10 @@ void GUIClass::InitButtons()
     _buttons[DISP_OPT_30S_B].initButtonUL(&_lcd, S_COL_1, S_ROW_2, S_BTN_W, S_BTN_H, TFT_YELLOW, BG_COLOR, TFT_WHITE, "30s", 1.5);
     _buttons[DISP_OPT_5M_B].initButtonUL(&_lcd, S_COL_2, S_ROW_2, S_BTN_W, S_BTN_H, TFT_YELLOW, BG_COLOR, TFT_WHITE, "5m", 1.5);
     _buttons[DISP_OPT_OFF_B].initButtonUL(&_lcd, S_COL_3, S_ROW_2, S_BTN_W, S_BTN_H, TFT_YELLOW, BG_COLOR, TFT_WHITE, "Off", 1.5);
+
+    _buttons[BRIGHT_DOWN_B].initButtonUL(&_lcd, S_COL_1, S_ROW_3, S_BTN_W, S_BTN_H, TFT_WHITE, BG_COLOR, TFT_WHITE, "LCD -", 1.5);
+    _buttons[BRIGHT_UP_B].initButtonUL(&_lcd, S_COL_2, S_ROW_3, S_BTN_W, S_BTN_H, TFT_WHITE, BG_COLOR, TFT_WHITE, "LCD +", 1.5);
+    _buttons[BRIGHT_RESET_B].initButtonUL(&_lcd, S_COL_3, S_ROW_3, S_BTN_W, S_BTN_H, TFT_WHITE, BG_COLOR, TFT_WHITE, "Reset", 1.5);
 }
 
 /**
@@ -104,6 +133,9 @@ void GUIClass::DrawButtons()
         _buttons[DISP_OPT_30S_B].drawButton();
         _buttons[DISP_OPT_5M_B].drawButton();
         _buttons[DISP_OPT_OFF_B].drawButton();
+        _buttons[BRIGHT_UP_B].drawButton();
+        _buttons[BRIGHT_DOWN_B].drawButton();
+        _buttons[BRIGHT_RESET_B].drawButton();
     }
 }
 
@@ -117,14 +149,17 @@ void GUIClass::ShowBTMode()
     _lcd.fillRect(5, 0, 70, 13, BG_COLOR);
     if (_btMode == TRANSMITTER_M)
     {
+        _lcd.setTextColor(TFT_RED);
         _lcd.setCursor(5, 5);
         _lcd.print("Transmitter");
     }
     else
     {
+        _lcd.setTextColor(TFT_SKYBLUE);
         _lcd.setCursor(5, 5);
         _lcd.print("Reciever");
     }
+    _lcd.setTextColor(TFT_WHITE);
 }
 
 /**
@@ -154,7 +189,7 @@ void GUIClass::CheckButtonPress()
     if (pressed && _lcdState == DISPLAY_OFF)
     {
         // screen debouncing
-        delay(50);
+        delay(100);
         if (_tScreen.getTouchPair(touch))
         {
             digitalWrite(LCD_POWER_PIN, HIGH);
@@ -210,7 +245,6 @@ void GUIClass::CheckButtonPress()
                 {
                     _buttons[bttn].drawButton();
                 }
-                // DisplayMenuMessage("released");
             }
 
             // button just pressed
@@ -236,7 +270,6 @@ void GUIClass::CheckButtonPress()
 
                 BUTTON_NAMES name = (BUTTON_NAMES)bttn;
                 ButtonCallback(name);
-                // DisplayMenuMessage("pressed");
             }
         }
     }
@@ -326,6 +359,28 @@ void GUIClass::ButtonCallback(BUTTON_NAMES &pressed)
         DisplayMenuMessage("Sleep off");
         _sleepMode = SLEEP_OFF;
     }
+    else if (pressed == BRIGHT_UP_B)
+    {
+        if (_lcdBrightness < 100)
+        {
+            _lcdBrightness += 10;
+        }
+        ChangeBrightness();
+    }
+    else if (pressed == BRIGHT_DOWN_B)
+    {
+        if (_lcdBrightness > 10)
+        {
+            _lcdBrightness -= 10;
+        }
+        ChangeBrightness();
+    }
+    else if (pressed == BRIGHT_RESET_B)
+    {
+        DisplayMenuMessage("Brightness 100%");
+        _lcdBrightness = 100;
+        ChangeBrightness();
+    }
     else
     {
         DisplayMenuMessage("Other button");
@@ -343,7 +398,7 @@ void GUIClass::ButtonCallback(BUTTON_NAMES &pressed)
 void GUIClass::RefreshData()
 {
     // check message if we need to cover
-    if (_messageOn && millis() - _messageTime > 500)
+    if (_messageOn && millis() - _messageTime > 750)
     {
         _messageOn = false;
         _lcd.fillRect(200, 0, 230, 13, BG_COLOR);
@@ -357,10 +412,22 @@ void GUIClass::RefreshData()
             digitalWrite(LCD_POWER_PIN, LOW);
             _lcdState = DISPLAY_OFF;
         }
-        else if (_sleepMode == SLEEP_5M  && millis() - _lastTouch > (5*60 * 1000))
+        else if (_sleepMode == SLEEP_5M && millis() - _lastTouch > (5 * 60 * 1000))
         {
             digitalWrite(LCD_POWER_PIN, LOW);
             _lcdState = DISPLAY_OFF;
+        }
+    }
+
+    if (_guiView == HOME_VIEW)
+    {
+        if (millis() - _lastGraphics > 150)
+        {
+            DrawVoltageGauge((float)random(0, 2) * 1.13 + 17.5);
+            DrawCurrentGauge((float)random(-2, 2) * 1.11 + 6);
+            //         // DrawVoltageGauge((float)_powerSensor.getBusVoltage());
+            //         // DrawCurrentGauge((float)_powerSensor.getCurrent());
+            _lastGraphics = millis();
         }
     }
 }
@@ -565,6 +632,18 @@ bool GUIClass::IsSettingsButtons(BUTTON_NAMES pressed)
     {
         return true;
     }
+    if (pressed == BRIGHT_UP_B)
+    {
+        return true;
+    }
+    if (pressed == BRIGHT_DOWN_B)
+    {
+        return true;
+    }
+    if (pressed == BRIGHT_RESET_B)
+    {
+        return true;
+    }
 
     return false;
 }
@@ -609,6 +688,138 @@ bool GUIClass::IsTabButtons(BUTTON_NAMES pressed)
 /**
  * Draws the voltage gauge to the screen
  */
-void GUIClass::DrawVoltageGauge()
+void GUIClass::DrawVoltageGauge(float rpm_input)
 {
+    int sprite_topCircleGuageSize = 140;
+    int in_radius_small = 48;
+    int out_radius_small = 65;
+    const int sprite_topCircleDataRow = 60 - 8;
+    const int angle0 = 135;          // 225
+    const int angle1 = angle0 + 270; // 315
+
+    const int minValue = 16;
+    const int maxValue = 21;
+    _spriteBattery.clear();
+    _spriteBattery.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small, out_radius_small, angle0, angle1, TFT_WHITE);
+    _spriteBattery.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small - 1, out_radius_small + 1, angle0, angle1, TFT_WHITE);
+    _spriteBattery.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small - 2, out_radius_small + 2, angle0, angle1, TFT_WHITE);
+
+    float calculatedAngle = mapf(rpm_input, minValue, maxValue, angle0, angle1);
+    if (calculatedAngle >= angle1)
+    {
+        calculatedAngle = angle1 - 1;
+    }
+    if (calculatedAngle <= angle0 + 1)
+    {
+        calculatedAngle = angle0 + 5;
+    }
+    _spriteBattery.setTextSize(2.0);
+    _spriteBattery.setCursor(41, sprite_topCircleDataRow + 2);
+    _spriteBattery.printf("%05.2f", rpm_input);
+    _spriteBattery.setCursor(42, sprite_topCircleDataRow + 28);
+    _spriteBattery.print("Volts");
+
+    // _spriteBattery.fillArc(_spriteBatterySize / 2, _spriteBatterySize / 2, in_radius_small + 2, out_radius_small - 2, angle0 + 1, calculatedAngle, TFT_BLUE);
+    _spriteBattery.fillArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small + 1, out_radius_small - 1, angle0 + 1, calculatedAngle, TFT_BLUE);
+    int tipMinAngle = calculatedAngle - 5;
+    if (tipMinAngle <= angle0)
+        tipMinAngle = calculatedAngle - 1;
+    _spriteBattery.fillArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small - 5, out_radius_small + 5, tipMinAngle, calculatedAngle, TFT_DARKGRAY);
+
+    // left for marking 0
+    int middleRadius = (out_radius_small - in_radius_small) / 2 + in_radius_small - 2;
+    int xCoord = sin(radians(angle0 - 15 + 90)) * middleRadius + 70 - 5;
+    int yCoord = -cos(radians(angle0 - 15 + 90)) * middleRadius + 65;
+    _spriteBattery.setCursor(xCoord, yCoord);
+    _spriteBattery.setTextSize(1.2);
+    _spriteBattery.print(minValue);
+
+    // right for marking max value
+    xCoord = sin(radians(angle1 + 15 + 90)) * middleRadius + 70;
+    _spriteBattery.setCursor(xCoord, yCoord);
+    _spriteBattery.print(maxValue);
+    _spriteBattery.pushSprite(&_lcd, S_COL_1, H_GUAGE_ROW_1 - 12);
+}
+
+/**
+ * Draws the current gauge onto the screen
+ */
+void GUIClass::DrawCurrentGauge(float rpm_input)
+{
+    int sprite_topCircleGuageSize = 140;
+    int in_radius_small = 48;
+    int out_radius_small = 65;
+    const int sprite_topCircleDataRow = 60 - 8;
+    const int angle0 = 135;          // 225
+    const int angle1 = angle0 + 270; // 315
+    _spriteCurrent.clear();
+    _spriteCurrent.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small, out_radius_small, angle0, angle1, TFT_WHITE);
+    _spriteCurrent.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small - 1, out_radius_small + 1, angle0, angle1, TFT_WHITE);
+    _spriteCurrent.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small - 2, out_radius_small + 2, angle0, angle1, TFT_WHITE);
+
+    float calculatedAngle = mapf(rpm_input, 0, 12, angle0, angle1);
+    if (calculatedAngle >= angle1)
+    {
+        calculatedAngle = angle1 - 1;
+    }
+    if (calculatedAngle <= angle0 + 1)
+    {
+        calculatedAngle = angle0 + 5;
+    }
+    _spriteCurrent.setTextSize(2.0);
+    _spriteCurrent.setCursor(41, sprite_topCircleDataRow + 2);
+    _spriteCurrent.printf("%05.2f", rpm_input);
+    _spriteCurrent.setCursor(48, sprite_topCircleDataRow + 28);
+    _spriteCurrent.print("Amps");
+
+    // _spriteCurrent.fillArc(_spriteCurrentSize / 2, _spriteCurrentSize / 2, in_radius_small + 2, out_radius_small - 2, angle0 + 1, calculatedAngle, TFT_BLUE);
+    _spriteCurrent.fillArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small + 1, out_radius_small - 1, angle0 + 1, calculatedAngle, TFT_RED);
+    int tipMinAngle = calculatedAngle - 5;
+    if (tipMinAngle <= angle0)
+        tipMinAngle = calculatedAngle - 1;
+    _spriteCurrent.fillArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small - 5, out_radius_small + 5, tipMinAngle, calculatedAngle, TFT_DARKGRAY);
+
+    // left for marking 0
+    int middleRadius = (out_radius_small - in_radius_small) / 2 + in_radius_small - 2;
+    int xCoord = sin(radians(angle0 - 15 + 90)) * middleRadius + 70 - 5;
+    int yCoord = -cos(radians(angle0 - 15 + 90)) * middleRadius + 65;
+    _spriteCurrent.setCursor(xCoord, yCoord);
+    _spriteCurrent.setTextSize(1.2);
+    _spriteCurrent.print(0);
+
+    // right for marking max value
+    xCoord = sin(radians(angle1 + 15 + 90)) * middleRadius + 70;
+    _spriteCurrent.setCursor(xCoord, yCoord);
+    _spriteCurrent.print(12);
+    _spriteCurrent.pushSprite(&_lcd, S_COL_1 + SPRITE_GUAGE_WIDTH + 10, H_GUAGE_ROW_1 - 12);
+}
+
+/**
+ * Changes the brightness of the LCD screen
+*/
+void GUIClass::ChangeBrightness()
+{
+    int mappedBright = map(_lcdBrightness, 0, 100, 0, 255);
+    if (mappedBright < 0)
+    {
+        mappedBright = 10;
+    }
+    if (mappedBright > 255)
+    {
+        mappedBright = 255;
+    }
+
+    char buffer[30];
+    sprintf(buffer, "Brightness %d%%", _lcdBrightness);
+    DisplayMenuMessage(buffer);
+    ledcWrite(LCD_BRIGHTNESS_CHANNEL, mappedBright);
+}
+
+/**
+ * Maps values and retuns as double so we can get precision
+ */
+double GUIClass::mapf(double x, double in_min, double in_max, double out_min, double out_max)
+{
+
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }

@@ -10,6 +10,8 @@ class T_FT6236 {
 public:
     T_FT6236();
 
+    void Begin();
+
     // Get the x point of the screen
     int getTouchPointX();
 

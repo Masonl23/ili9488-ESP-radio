@@ -2,8 +2,14 @@
 
 
 T_FT6236::T_FT6236(){
+    // Wire1.begin(38,39);
+}
+
+void T_FT6236::Begin(){
     Wire1.begin(38,39);
 }
+
+
 
 /**
  * @brief Get the x pair of the screen
