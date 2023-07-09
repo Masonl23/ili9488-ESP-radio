@@ -48,16 +48,12 @@ void GUIClass::Start()
 void GUIClass::DrawBrightnessSlider()
 {
     _spriteBrightSlider.clear();
-    _spriteBrightSlider.drawRoundRect(0, 0, BRIGHT_SLIDER_WIDTH, S_BTN_H, 10, TFT_RED);
+    // _spriteBrightSlider.drawRoundRect(0, 0, BRIGHT_SLIDER_WIDTH, S_BTN_H, 10, TFT_BLUE);
+    _spriteBrightSlider.drawRoundRect(0, 14, BRIGHT_SLIDER_WIDTH, S_BTN_H/2, 10, TFT_BLUE);
 
-    if (_sliderTouchX > 276)
-    {
-        _sliderTouchX = 276;
-    }
-    if (_sliderTouchX > 0)
-    {
-        _spriteBrightSlider.fillRoundRect(2, 2, _sliderTouchX, S_BTN_H - 5, 10, TFT_LIGHTGRAY);
-    }
+        // _spriteBrightSlider.fillRoundRect(2, 2, _sliderTouchX, S_BTN_H - 5, 10, TFT_WHITE);
+    _spriteBrightSlider.fillRoundRect(_sliderTouchX-10,3,20,S_BTN_H-5,10,TFT_WHITE);
+
 
     _spriteBrightSlider.pushSprite(&_lcd, S_COL_1, S_ROW_3);
     ChangeBrightness();
@@ -258,9 +254,12 @@ void GUIClass::CheckButtonPress()
                             {
                                 _sliderTouchX = touch[0] - S_COL_1 - 50;
                                 if (_sliderTouchX < 10){
-                                    _sliderTouchX = 11;
+                                    _sliderTouchX = 10;
                                 }
-                                DisplayMenuMessage(String(_sliderTouchX));
+                                if(_sliderTouchX > BRIGHT_SLIDER_LIMIT){
+                                    _sliderTouchX = BRIGHT_SLIDER_LIMIT;
+                                }
+                                // DisplayMenuMessage(String(_sliderTouchX));
                                 DrawBrightnessSlider();
                             }
 
@@ -855,11 +854,14 @@ void GUIClass::DrawCurrentGauge(float rpm_input)
  */
 void GUIClass::ChangeBrightness()
 {
-    int mappedBright = map(_sliderTouchX,0,276,0,255);
-    _lcdBrightness = map(_sliderTouchX,0,276,0,100);
+    int mappedBright = map(_sliderTouchX,0,BRIGHT_SLIDER_LIMIT,0,255);
+    _lcdBrightness = map(_sliderTouchX,0,BRIGHT_SLIDER_LIMIT,0,100);
     char buffer[30];
     sprintf(buffer, "Brightness %d%%", _lcdBrightness);
     DisplayMenuMessage(buffer);
+    if(mappedBright >255){
+        mappedBright = 255;
+    }
     ledcWrite(LCD_BRIGHTNESS_CHANNEL, mappedBright);
 }
 

@@ -60,6 +60,7 @@
 #define SPRITE_BAT_OUT_R    65 
 
 #define BRIGHT_SLIDER_WIDTH (S_COL_3-S_COL_1 + 30)
+#define BRIGHT_SLIDER_LIMIT 276-8
 
 
 // color definitions
@@ -251,7 +252,7 @@ private:
     // current brightness of display, default to 100
     uint32_t _lcdBrightness = 100;
 
-    int _sliderTouchX = 276;
+    int _sliderTouchX = BRIGHT_SLIDER_LIMIT;
 
     // define external peripherals
     PCF8574 gpio = PCF8574(PCF_I2C_ADD,18,17);
