@@ -38,7 +38,6 @@ void GUIloop(void *param){
       gui.CheckButtonPress();
 
       gui.RefreshData();
-      vTaskDelay(1);
     }
 }
 

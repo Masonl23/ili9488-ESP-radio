@@ -29,32 +29,27 @@ void GUIClass::Start()
 
     _lastTouch = millis();
 
-    if (_powerSensor.isConnected())
-    {
-        DisplayMenuMessage("INA connected");
-    }
-    else
-    {
-        DisplayMenuMessage("INA failed");
-    }
-    _messageTime += 500;
-
     // start the LEDC channel to control brightness
     ledcSetup(LCD_BRIGHTNESS_CHANNEL, 5000, 8);
     ledcAttachPin(LCD_POWER_PIN, LCD_BRIGHTNESS_CHANNEL);
     ledcWrite(LCD_BRIGHTNESS_CHANNEL, 255); // default full bright
 }
 
+/**
+ * Prints the brightness slider to the screen
+*/
 void GUIClass::DrawBrightnessSlider()
 {
     _spriteBrightSlider.clear();
-    // _spriteBrightSlider.drawRoundRect(0, 0, BRIGHT_SLIDER_WIDTH, S_BTN_H, 10, TFT_BLUE);
-    _spriteBrightSlider.drawRoundRect(0, 14, BRIGHT_SLIDER_WIDTH, S_BTN_H/2, 10, TFT_BLUE);
+    _spriteBrightSlider.drawString("Screen Brightness",95,S_BTN_H/2-5);
 
-        // _spriteBrightSlider.fillRoundRect(2, 2, _sliderTouchX, S_BTN_H - 5, 10, TFT_WHITE);
-    _spriteBrightSlider.fillRoundRect(_sliderTouchX-10,3,20,S_BTN_H-5,10,TFT_WHITE);
+    // outside bar
+    _spriteBrightSlider.drawRoundRect(0, 14, BRIGHT_SLIDER_WIDTH, S_BTN_H/2, 10, TFT_PURPLE);
+    _spriteBrightSlider.drawRoundRect(1, 15, BRIGHT_SLIDER_WIDTH-2, S_BTN_H/2 -2, 10, TFT_PURPLE);
+    // vertical 'position' bar
+    _spriteBrightSlider.fillRoundRect(_sliderTouchX-10,3,20,S_BTN_H-6,10,TFT_WHITE);
 
-
+    // push sprite and change brightness
     _spriteBrightSlider.pushSprite(&_lcd, S_COL_1, S_ROW_3);
     ChangeBrightness();
 }
@@ -88,8 +83,9 @@ void GUIClass::InitLcd()
     _lcd.fillScreen(BG_COLOR);
     _lcd.clearDisplay();
 
-    _spriteBattery.createSprite(SPRITE_BATTERY_SIZE + 4, SPRITE_BATTERY_SIZE + 4);
-    _spriteCurrent.createSprite(SPRITE_BATTERY_SIZE + 4, SPRITE_BATTERY_SIZE + 4);
+    // allocate memory for the sprites
+    _spriteBattery.createSprite(SPRITE_BATTERY_SIZE, SPRITE_BATTERY_SIZE);
+    _spriteCurrent.createSprite(SPRITE_BATTERY_SIZE, SPRITE_BATTERY_SIZE);
     _spriteBrightSlider.createSprite(BRIGHT_SLIDER_WIDTH, S_BTN_H);
 }
 
@@ -111,18 +107,17 @@ void GUIClass::InitButtons()
     _buttons[HOME_B].initButtonUL(&_lcd, TAB_COL_HOME - 30, TAB_ROW, 94, 33, TFT_BLACK, TFT_BLACK, TFT_WHITE, "Home", 1.5);
     _buttons[SETTINGS_B].initButtonUL(&_lcd, TAB_COL_SETTINGS - 10, TAB_ROW, 94, 33, TFT_BLACK, TFT_BLACK, TFT_WHITE, "Settings", 1.5);
 
+    // pair, transmit and reciever buttons
     _buttons[PAIR_B].initButtonUL(&_lcd, S_COL_1, S_ROW_1, S_BTN_W, S_BTN_H, TFT_GREEN, BG_COLOR, TFT_WHITE, "Pair", 1.5);
     _buttons[TX_B].initButtonUL(&_lcd, S_COL_2, S_ROW_1, S_BTN_W, S_BTN_H, TFT_RED, BG_COLOR, TFT_WHITE, "Tx", 1.5);
     _buttons[RX_B].initButtonUL(&_lcd, S_COL_3, S_ROW_1, S_BTN_W, S_BTN_H, TFT_SKYBLUE, BG_COLOR, TFT_WHITE, "Rx", 1.5);
 
+    // sleep options buttons
     _buttons[DISP_OPT_30S_B].initButtonUL(&_lcd, S_COL_1, S_ROW_2, S_BTN_W, S_BTN_H, TFT_YELLOW, BG_COLOR, TFT_WHITE, "30s", 1.5);
     _buttons[DISP_OPT_5M_B].initButtonUL(&_lcd, S_COL_2, S_ROW_2, S_BTN_W, S_BTN_H, TFT_YELLOW, BG_COLOR, TFT_WHITE, "5m", 1.5);
     _buttons[DISP_OPT_OFF_B].initButtonUL(&_lcd, S_COL_3, S_ROW_2, S_BTN_W, S_BTN_H, TFT_YELLOW, BG_COLOR, TFT_WHITE, "Off", 1.5);
 
-    // _buttons[BRIGHT_DOWN_B].initButtonUL(&_lcd, S_COL_1, S_ROW_3, S_BTN_W, S_BTN_H, TFT_WHITE, BG_COLOR, TFT_WHITE, "LCD -", 1.5);
-    // _buttons[BRIGHT_UP_B].initButtonUL(&_lcd, S_COL_2, S_ROW_3, S_BTN_W, S_BTN_H, TFT_WHITE, BG_COLOR, TFT_WHITE, "LCD +", 1.5);
-    // _buttons[BRIGHT_RESET_B].initButtonUL(&_lcd, S_COL_3, S_ROW_3, S_BTN_W, S_BTN_H, TFT_WHITE, BG_COLOR, TFT_WHITE, "Reset", 1.5);
-
+    // slider for brightness
     _buttons[BRIGHT_SLIDER_B].initButtonUL(&_lcd, S_COL_1, S_ROW_3, BRIGHT_SLIDER_WIDTH, S_BTN_H, TFT_WHITE, BG_COLOR, TFT_WHITE, "Brightness");
 }
 
@@ -140,7 +135,8 @@ void GUIClass::DrawButtons()
     _lcd.drawLine(TAB_LINE_COL, TAB_LINE_ROW, TAB_LINE_COL_END, TAB_LINE_ROW, TFT_WHITE); // draw line under tabs
     _lcd.drawLine(TAB_LINE_COL, TAB_LINE_ROW + 1, TAB_LINE_COL_END, TAB_LINE_ROW + 1, TFT_WHITE);
 
-    _lcd.fillRect(S_COL_1, H_GUAGE_ROW_1 - 12, 340, 250, BG_COLOR); // Cover home tab stuff
+    // cover the setting/home view buttons
+    _lcd.fillRect(TAB_LINE_COL, TAB_COVER_ROW, TAB_COVER_RECT_W, TAB_COVER_RECT_H, BG_COLOR); // Cover home tab stuff
 
     if (_guiView == HOME_VIEW)
     {
@@ -157,11 +153,7 @@ void GUIClass::DrawButtons()
         _buttons[DISP_OPT_5M_B].drawButton();
         _buttons[DISP_OPT_OFF_B].drawButton();
 
-        // _buttons[BRIGHT_UP_B].drawButton();
-        // _buttons[BRIGHT_DOWN_B].drawButton();
-        // _buttons[BRIGHT_RESET_B].drawButton();
-
-        // _buttons[BRIGHT_SLIDER_B].drawButton();
+        // BRIGHT_SLIDER_B is special, it has its own drawButton since its a slider
         DrawBrightnessSlider();
     }
 }
@@ -233,7 +225,7 @@ void GUIClass::CheckButtonPress()
             if (pressed && _buttons[bttn].contains(touch[0], touch[1]))
             {
                 // button debouncing, removes ghost clicks from happening
-                delay(50);
+                delay(25);
                 pressed = _tScreen.getTouchPair(touch);
                 if (pressed && _buttons[bttn].contains(touch[0], touch[1]))
                 {
@@ -253,11 +245,11 @@ void GUIClass::CheckButtonPress()
                             if (bttn == BRIGHT_SLIDER_B)
                             {
                                 _sliderTouchX = touch[0] - S_COL_1 - 50;
-                                if (_sliderTouchX < 10){
-                                    _sliderTouchX = 10;
+                                if (_sliderTouchX < BRIGHT_SLIDER_LOWER_LIMIT){
+                                    _sliderTouchX = BRIGHT_SLIDER_LOWER_LIMIT;
                                 }
-                                if(_sliderTouchX > BRIGHT_SLIDER_LIMIT){
-                                    _sliderTouchX = BRIGHT_SLIDER_LIMIT;
+                                if(_sliderTouchX > BRIGHT_SLIDER_UPPER_LIMIT){
+                                    _sliderTouchX = BRIGHT_SLIDER_UPPER_LIMIT;
                                 }
                                 // DisplayMenuMessage(String(_sliderTouchX));
                                 DrawBrightnessSlider();
@@ -406,28 +398,6 @@ void GUIClass::ButtonCallback(BUTTON_NAMES &pressed)
         DisplayMenuMessage("Sleep off");
         _sleepMode = SLEEP_OFF;
     }
-    // else if (pressed == BRIGHT_UP_B)
-    // {
-    //     if (_lcdBrightness < 100)
-    //     {
-    //         _lcdBrightness += 10;
-    //     }
-    //     ChangeBrightness();
-    // }
-    // else if (pressed == BRIGHT_DOWN_B)
-    // {
-    //     if (_lcdBrightness > 10)
-    //     {
-    //         _lcdBrightness -= 10;
-    //     }
-    //     ChangeBrightness();
-    // }
-    // else if (pressed == BRIGHT_RESET_B)
-    // {
-    //     DisplayMenuMessage("Brightness 100%");
-    //     _lcdBrightness = 100;
-    //     ChangeBrightness();
-    // }
     else if (pressed == BRIGHT_SLIDER_B)
     {
         // nothing to be done here
@@ -506,8 +476,8 @@ void GUIClass::DrawMenu()
     _lcd.setTextSize(1);
 
     // draw line for the menu
-    _lcd.drawLine(0, 14, SCREEN_WIDTH, 14, TFT_WHITE);
-    _lcd.drawLine(0, 15, SCREEN_WIDTH, 15, TFT_WHITE);
+    _lcd.drawLine(0, MENU_LINE_ROW, SCREEN_WIDTH, MENU_LINE_ROW, TFT_WHITE);
+    _lcd.drawLine(0, MENU_LINE_ROW+1, SCREEN_WIDTH, MENU_LINE_ROW+1, TFT_WHITE);
 }
 
 /**
@@ -683,18 +653,6 @@ bool GUIClass::IsSettingsButtons(BUTTON_NAMES pressed)
     {
         return true;
     }
-    // if (pressed == BRIGHT_UP_B)
-    // {
-    //     return true;
-    // }
-    // if (pressed == BRIGHT_DOWN_B)
-    // {
-    //     return true;
-    // }
-    // if (pressed == BRIGHT_RESET_B)
-    // {
-    //     return true;
-    // }
     if (pressed == BRIGHT_SLIDER_B)
     {
         return true;
@@ -793,7 +751,7 @@ void GUIClass::DrawVoltageGauge(float rpm_input)
     xCoord = sin(radians(angle1 + 15 + 90)) * middleRadius + 70;
     _spriteBattery.setCursor(xCoord, yCoord);
     _spriteBattery.print(maxValue);
-    _spriteBattery.pushSprite(&_lcd, S_COL_1, H_GUAGE_ROW_1 - 12);
+    _spriteBattery.pushSprite(&_lcd, S_COL_1, H_GUAGE_ROW);
 }
 
 /**
@@ -846,7 +804,7 @@ void GUIClass::DrawCurrentGauge(float rpm_input)
     xCoord = sin(radians(angle1 + 15 + 90)) * middleRadius + 70;
     _spriteCurrent.setCursor(xCoord, yCoord);
     _spriteCurrent.print(12);
-    _spriteCurrent.pushSprite(&_lcd, S_COL_1 + SPRITE_GUAGE_WIDTH + 10, H_GUAGE_ROW_1 - 12);
+    _spriteCurrent.pushSprite(&_lcd, S_COL_1 + SPRITE_GUAGE_WIDTH + 10, H_GUAGE_ROW);
 }
 
 /**
@@ -854,11 +812,17 @@ void GUIClass::DrawCurrentGauge(float rpm_input)
  */
 void GUIClass::ChangeBrightness()
 {
-    int mappedBright = map(_sliderTouchX,0,BRIGHT_SLIDER_LIMIT,0,255);
-    _lcdBrightness = map(_sliderTouchX,0,BRIGHT_SLIDER_LIMIT,0,100);
+    // math to convert ratio of button position to pwm 0-255
+    int mappedBright = map(_sliderTouchX,0,BRIGHT_SLIDER_UPPER_LIMIT,0,255);
+    // math to convert ratio of button position to 0-100 %
+    int percentBright = map(_sliderTouchX,0,BRIGHT_SLIDER_UPPER_LIMIT,0,100);
+
+    // write brightness percentage
     char buffer[30];
-    sprintf(buffer, "Brightness %d%%", _lcdBrightness);
+    sprintf(buffer, "Brightness %d%%", percentBright);
     DisplayMenuMessage(buffer);
+
+    // safe guard incase we go over
     if(mappedBright >255){
         mappedBright = 255;
     }
