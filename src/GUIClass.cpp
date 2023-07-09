@@ -165,17 +165,17 @@ void GUIClass::ShowBTMode()
 {
     _lcd.setTextSize(1);
     _lcd.setTextColor(TFT_WHITE);
-    _lcd.fillRect(5, 0, 70, 13, BG_COLOR);
+    _lcd.fillRect(MENU_BT_TEXT_COL, 0, MENU_BT_COVER_RECT_W, MENU_BT_COVER_RECT_H, BG_COLOR);
     if (_btMode == TRANSMITTER_M)
     {
         _lcd.setTextColor(TFT_RED);
-        _lcd.setCursor(5, 5);
+        _lcd.setCursor(MENU_BT_TEXT_COL, MENU_TEXT_ROW);
         _lcd.print("Transmitter");
     }
     else
     {
         _lcd.setTextColor(TFT_SKYBLUE);
-        _lcd.setCursor(5, 5);
+        _lcd.setCursor(MENU_BT_TEXT_COL, MENU_TEXT_ROW);
         _lcd.print("Reciever");
     }
     _lcd.setTextColor(TFT_WHITE);
@@ -444,13 +444,28 @@ void GUIClass::RefreshData()
     {
         if (millis() - _lastGraphics > 150)
         {
-            DrawVoltageGauge((float)random(0, 2) * 1.13 + 17.5);
-            DrawCurrentGauge((float)random(-2, 2) * 1.11 + 6);
+            float voltageReading = (float)random(0, 2) * 1.13 + 17.5;
+            float currentReading =(float)random(-2, 2) * 1.11 + 6;
+
+            DrawVoltageGauge(voltageReading);
+            DrawCurrentGauge(currentReading);
             //         // DrawVoltageGauge((float)_powerSensor.getBusVoltage());
             //         // DrawCurrentGauge((float)_powerSensor.getCurrent());
+
+            DrawBatteryPercentage(voltageReading);
             _lastGraphics = millis();
         }
     }
+}
+
+/**
+ * Given a voltage reading, functions converts it to a percentage and prints it to
+ * the right size of menu
+*/
+void GUIClass::DrawBatteryPercentage(float rawVolage){
+    _lcd.setTextSize(1);
+    _lcd.setTextColor(TFT_WHITE);
+    
 }
 
 /**
@@ -459,9 +474,9 @@ void GUIClass::RefreshData()
 void GUIClass::DisplayMenuMessage(String message)
 {
     _lcd.setTextSize(1);
-    _lcd.fillRect(200, 0, 230, 13, BG_COLOR);
+    _lcd.fillRect(MENU_MSG_TEXT_COL, 0, MENU_MSG_COVER_RECT_W, MENU_MSG_COVER_RECT_H, BG_COLOR);
     _lcd.setTextColor(TFT_GOLD);
-    _lcd.setCursor(200, 5);
+    _lcd.setCursor(MENU_MSG_TEXT_COL, MENU_TEXT_ROW);
     _lcd.print(message);
     _messageOn = true;
     _messageTime = millis();

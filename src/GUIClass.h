@@ -11,8 +11,6 @@
 /**
  * Tab positions
 */
-// top menu positions
-#define MENU_LINE_ROW       14
 // tab (setting and home) column positions
 #define TAB_ROW             22                          // Row tab y pos
 #define TAB_COL_HOME        TAB_LINE_COL + 40           // Col x pos
@@ -26,6 +24,20 @@
 #define TAB_COVER_ROW       H_GUAGE_ROW-10
 #define TAB_COVER_RECT_W    340
 #define TAB_COVER_RECT_H    250
+
+/**
+ * Menu positions
+*/
+// top menu positions
+#define MENU_LINE_ROW           14
+#define MENU_BT_TEXT_COL        5
+#define MENU_BT_COVER_RECT_W    70
+#define MENU_BT_COVER_RECT_H    13
+#define MENU_TEXT_ROW           5
+#define MENU_MSG_TEXT_COL       200
+#define MENU_MSG_COVER_RECT_W   230
+#define MENU_MSG_COVER_RECT_H   13
+
 
 /**
  * Setting's view
@@ -258,6 +270,9 @@ private:
     // Draws the brightness slider on screen based on new position
     void DrawBrightnessSlider();
 
+    // given raw voltage, function converts to percentage 
+    void DrawBatteryPercentage(float rawVoltage);
+
     // period used to determine how long to sleep after last touch
     ulong _sleepPeriod = 0;
 
@@ -266,6 +281,7 @@ private:
 
     // time last graphic update occured
     ulong _lastGraphics = 0;
+
 
     // position brightness slider was pressed
     int _sliderTouchX = BRIGHT_SLIDER_UPPER_LIMIT;
