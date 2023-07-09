@@ -156,6 +156,8 @@ public:
         NUM_SLEEP_MODE
     };
 
+    GUIClass();
+
     // checks if there is any new buttons presses
     void CheckButtonPress();
 
@@ -196,6 +198,8 @@ public:
     void DrawVoltageGauge(float voltageInput);
     void DrawCurrentGauge(float voltageInput);
 
+    void DisplayPeripheralStart();
+
 private:
     // internal members
     LGFX _lcd;
@@ -213,6 +217,7 @@ private:
     // sprites used for guages
     LGFX_Sprite _spriteBattery;
     LGFX_Sprite _spriteCurrent;
+    LGFX_Sprite _spriteBrightSlider;
 
     // starts the LCD panel
     void InitLcd();

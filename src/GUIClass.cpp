@@ -1,5 +1,9 @@
 #include "GUIClass.h"
 
+GUIClass::GUIClass(){
+
+}
+
 /**
  * Starts the display and touch controllers as well as setting default values
  */
@@ -40,6 +44,7 @@ void GUIClass::Start()
     ledcAttachPin(LCD_POWER_PIN, LCD_BRIGHTNESS_CHANNEL);
     ledcWrite(LCD_BRIGHTNESS_CHANNEL, 255); // default full bright
 }
+
 
 void GUIClass::InitINA226()
 {
@@ -814,6 +819,8 @@ void GUIClass::ChangeBrightness()
     DisplayMenuMessage(buffer);
     ledcWrite(LCD_BRIGHTNESS_CHANNEL, mappedBright);
 }
+
+
 
 /**
  * Maps values and retuns as double so we can get precision
