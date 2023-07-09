@@ -30,14 +30,19 @@
 */
 // top menu positions
 #define MENU_LINE_ROW           14
+#define MENU_TEXT_ROW           5
+// bluetooth positions
 #define MENU_BT_TEXT_COL        5
 #define MENU_BT_COVER_RECT_W    70
 #define MENU_BT_COVER_RECT_H    13
-#define MENU_TEXT_ROW           5
+// message positions
 #define MENU_MSG_TEXT_COL       200
 #define MENU_MSG_COVER_RECT_W   230
 #define MENU_MSG_COVER_RECT_H   13
-
+// battery percent positions
+#define MENU_BATT_TEXT_COL      450
+#define MENU_BATT_COVER_RECT_W  30
+#define MENU_BATT_COVER_RECT_H  13
 
 /**
  * Setting's view
@@ -281,6 +286,9 @@ private:
 
     // time last graphic update occured
     ulong _lastGraphics = 0;
+
+    float MAX_BATTERY_VOLTAGE = 21.1;
+    float MIN_BATTERY_VOLTAGE = 16;
 
 
     // position brightness slider was pressed

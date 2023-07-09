@@ -37,17 +37,17 @@ void GUIClass::Start()
 
 /**
  * Prints the brightness slider to the screen
-*/
+ */
 void GUIClass::DrawBrightnessSlider()
 {
     _spriteBrightSlider.clear();
-    _spriteBrightSlider.drawString("Screen Brightness",95,S_BTN_H/2-5);
+    _spriteBrightSlider.drawString("Screen Brightness", 95, S_BTN_H / 2 - 5);
 
     // outside bar
-    _spriteBrightSlider.drawRoundRect(0, 14, BRIGHT_SLIDER_WIDTH, S_BTN_H/2, 10, TFT_PURPLE);
-    _spriteBrightSlider.drawRoundRect(1, 15, BRIGHT_SLIDER_WIDTH-2, S_BTN_H/2 -2, 10, TFT_PURPLE);
+    _spriteBrightSlider.drawRoundRect(0, 14, BRIGHT_SLIDER_WIDTH, S_BTN_H / 2, 10, TFT_PURPLE);
+    _spriteBrightSlider.drawRoundRect(1, 15, BRIGHT_SLIDER_WIDTH - 2, S_BTN_H / 2 - 2, 10, TFT_PURPLE);
     // vertical 'position' bar
-    _spriteBrightSlider.fillRoundRect(_sliderTouchX-10,3,20,S_BTN_H-6,10,TFT_WHITE);
+    _spriteBrightSlider.fillRoundRect(_sliderTouchX - 10, 3, 20, S_BTN_H - 6, 10, TFT_WHITE);
 
     // push sprite and change brightness
     _spriteBrightSlider.pushSprite(&_lcd, S_COL_1, S_ROW_3);
@@ -245,10 +245,12 @@ void GUIClass::CheckButtonPress()
                             if (bttn == BRIGHT_SLIDER_B)
                             {
                                 _sliderTouchX = touch[0] - S_COL_1 - 50;
-                                if (_sliderTouchX < BRIGHT_SLIDER_LOWER_LIMIT){
+                                if (_sliderTouchX < BRIGHT_SLIDER_LOWER_LIMIT)
+                                {
                                     _sliderTouchX = BRIGHT_SLIDER_LOWER_LIMIT;
                                 }
-                                if(_sliderTouchX > BRIGHT_SLIDER_UPPER_LIMIT){
+                                if (_sliderTouchX > BRIGHT_SLIDER_UPPER_LIMIT)
+                                {
                                     _sliderTouchX = BRIGHT_SLIDER_UPPER_LIMIT;
                                 }
                                 // DisplayMenuMessage(String(_sliderTouchX));
@@ -444,8 +446,9 @@ void GUIClass::RefreshData()
     {
         if (millis() - _lastGraphics > 150)
         {
-            float voltageReading = (float)random(0, 2) * 1.13 + 17.5;
-            float currentReading =(float)random(-2, 2) * 1.11 + 6;
+            // float voltageReading = (float)random(0, 2) * 1.13 + 17.5;
+            static float voltageReading = MIN_BATTERY_VOLTAGE;
+            float currentReading = (float)random(-2, 2) * 1.11 + 6;
 
             DrawVoltageGauge(voltageReading);
             DrawCurrentGauge(currentReading);
@@ -454,6 +457,11 @@ void GUIClass::RefreshData()
 
             DrawBatteryPercentage(voltageReading);
             _lastGraphics = millis();
+            if (voltageReading + .1 > MAX_BATTERY_VOLTAGE)
+            {
+                voltageReading = MIN_BATTERY_VOLTAGE;
+            }
+            voltageReading += .1;
         }
     }
 }
@@ -461,11 +469,17 @@ void GUIClass::RefreshData()
 /**
  * Given a voltage reading, functions converts it to a percentage and prints it to
  * the right size of menu
-*/
-void GUIClass::DrawBatteryPercentage(float rawVolage){
+ */
+void GUIClass::DrawBatteryPercentage(float rawVolage)
+{
     _lcd.setTextSize(1);
     _lcd.setTextColor(TFT_WHITE);
-    
+    _lcd.fillRect(MENU_BATT_TEXT_COL, 0, MENU_BATT_COVER_RECT_W, MENU_BATT_COVER_RECT_H, BG_COLOR);
+
+    float batteryPercent = mapf(rawVolage, MIN_BATTERY_VOLTAGE, MAX_BATTERY_VOLTAGE, 0, 100);
+    char buffer[20];
+    sprintf(buffer, "%3.1f%%", batteryPercent);
+    _lcd.drawString(buffer, MENU_BATT_TEXT_COL, MENU_TEXT_ROW);
 }
 
 /**
@@ -492,7 +506,7 @@ void GUIClass::DrawMenu()
 
     // draw line for the menu
     _lcd.drawLine(0, MENU_LINE_ROW, SCREEN_WIDTH, MENU_LINE_ROW, TFT_WHITE);
-    _lcd.drawLine(0, MENU_LINE_ROW+1, SCREEN_WIDTH, MENU_LINE_ROW+1, TFT_WHITE);
+    _lcd.drawLine(0, MENU_LINE_ROW + 1, SCREEN_WIDTH, MENU_LINE_ROW + 1, TFT_WHITE);
 }
 
 /**
@@ -725,14 +739,12 @@ void GUIClass::DrawVoltageGauge(float rpm_input)
     const int angle0 = 135;          // 225
     const int angle1 = angle0 + 270; // 315
 
-    const int minValue = 16;
-    const int maxValue = 21;
     _spriteBattery.clear();
     _spriteBattery.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small, out_radius_small, angle0, angle1, TFT_WHITE);
     _spriteBattery.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small - 1, out_radius_small + 1, angle0, angle1, TFT_WHITE);
     _spriteBattery.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small - 2, out_radius_small + 2, angle0, angle1, TFT_WHITE);
 
-    float calculatedAngle = mapf(rpm_input, minValue, maxValue, angle0, angle1);
+    float calculatedAngle = mapf(rpm_input, MIN_BATTERY_VOLTAGE, MAX_BATTERY_VOLTAGE, angle0, angle1);
     if (calculatedAngle >= angle1)
     {
         calculatedAngle = angle1 - 1;
@@ -760,12 +772,16 @@ void GUIClass::DrawVoltageGauge(float rpm_input)
     int yCoord = -cos(radians(angle0 - 15 + 90)) * middleRadius + 65;
     _spriteBattery.setCursor(xCoord, yCoord);
     _spriteBattery.setTextSize(1.2);
-    _spriteBattery.print(minValue);
+    char buffer[5];
+    sprintf(buffer, "%1.1f", MIN_BATTERY_VOLTAGE);
+    _spriteBattery.drawString(buffer,xCoord,yCoord);
 
     // right for marking max value
     xCoord = sin(radians(angle1 + 15 + 90)) * middleRadius + 70;
     _spriteBattery.setCursor(xCoord, yCoord);
-    _spriteBattery.print(maxValue);
+    sprintf(buffer, "%1.1f", MAX_BATTERY_VOLTAGE);
+    _spriteBattery.drawString(buffer,xCoord-15,yCoord);
+
     _spriteBattery.pushSprite(&_lcd, S_COL_1, H_GUAGE_ROW);
 }
 
@@ -828,9 +844,9 @@ void GUIClass::DrawCurrentGauge(float rpm_input)
 void GUIClass::ChangeBrightness()
 {
     // math to convert ratio of button position to pwm 0-255
-    int mappedBright = map(_sliderTouchX,0,BRIGHT_SLIDER_UPPER_LIMIT,0,255);
+    int mappedBright = map(_sliderTouchX, 0, BRIGHT_SLIDER_UPPER_LIMIT, 0, 255);
     // math to convert ratio of button position to 0-100 %
-    int percentBright = map(_sliderTouchX,0,BRIGHT_SLIDER_UPPER_LIMIT,0,100);
+    int percentBright = map(_sliderTouchX, 0, BRIGHT_SLIDER_UPPER_LIMIT, 0, 100);
 
     // write brightness percentage
     char buffer[30];
@@ -838,7 +854,8 @@ void GUIClass::ChangeBrightness()
     DisplayMenuMessage(buffer);
 
     // safe guard incase we go over
-    if(mappedBright >255){
+    if (mappedBright > 255)
+    {
         mappedBright = 255;
     }
     ledcWrite(LCD_BRIGHTNESS_CHANNEL, mappedBright);
