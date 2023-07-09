@@ -59,6 +59,8 @@
 #define SPRITE_BAT_IN_R     48
 #define SPRITE_BAT_OUT_R    65 
 
+#define BRIGHT_SLIDER_WIDTH (S_COL_3-S_COL_1 + 30)
+
 
 // color definitions
 #define BG_COLOR TFT_BLACK
@@ -97,6 +99,8 @@ public:
         BRIGHT_DOWN_B,
         BRIGHT_UP_B,
         BRIGHT_RESET_B,
+
+        BRIGHT_SLIDER_B,
 
         NUM_BUTTONS
     };
@@ -198,7 +202,6 @@ public:
     void DrawVoltageGauge(float voltageInput);
     void DrawCurrentGauge(float voltageInput);
 
-    void DisplayPeripheralStart();
 
 private:
     // internal members
@@ -234,6 +237,8 @@ private:
     // changes the brightness of screen
     void ChangeBrightness();
 
+    void DrawBrightnessSlider();
+
     // period used to determine how long to sleep after last touch
     ulong _sleepPeriod = 0;
 
@@ -245,6 +250,8 @@ private:
 
     // current brightness of display, default to 100
     uint32_t _lcdBrightness = 100;
+
+    int _sliderTouchX = 276;
 
     // define external peripherals
     PCF8574 gpio = PCF8574(PCF_I2C_ADD,18,17);

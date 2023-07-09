@@ -34,10 +34,6 @@ void loop()
 }
 
 void GUIloop(void *param){
-  delay(500);
-  // TIMERG0.wdt_wprotect = TIMG_WDT_WKEY_VALUE;       // prevent watchdog from crashing program!
-  // TIMERG0.wdt_feed = 1;
-  // TIMERG0.wdt_wprotect = 0;
     while(true){
       gui.CheckButtonPress();
 
@@ -47,12 +43,6 @@ void GUIloop(void *param){
 }
 
 void WiFiloop(void *param){
-
-  // TIMERG1.wdtwprotect = TIMG_WDT_WKEY_VALUE;       // prevent watchdog from crashing program!
-  // TIMERG1.wdtfeed = 1;
-  // TIMERG1.wdtwprotect = 0;
-  
-
     while(true){
       gui.CheckQueue();
       vTaskDelay(1);
