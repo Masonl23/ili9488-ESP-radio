@@ -95,7 +95,8 @@
 #define BRIGHT_SLIDER_LOWER_LIMIT 10
 
 // Background color for whole system
-#define BG_COLOR TFT_BLACK
+#define GUI_BG_COLOR    TFT_BLACK
+#define GUI_TEXT_COLOR  TFT_WHITE
 
 // pin definitions for peripherals
 #define LCD_POWER_PIN 45

@@ -23,6 +23,7 @@ void GUIClass::Start()
 
     // start the buttons draw menus
     InitButtons();
+    _lcd.fillScreen(GUI_BG_COLOR);
     DrawButtons();
     DrawMenu();
     ShowBTMode();
@@ -40,7 +41,8 @@ void GUIClass::Start()
  */
 void GUIClass::DrawBrightnessSlider()
 {
-    _spriteBrightSlider.clear();
+    _spriteBrightSlider.clear(GUI_BG_COLOR);
+    _spriteBrightSlider.setTextColor(TFT_WHITE,GUI_BG_COLOR);
     _spriteBrightSlider.drawString("Screen Brightness", 95, S_BTN_H / 2 - 5);
 
     // outside bar
@@ -62,7 +64,7 @@ void GUIClass::InitINA226()
     // _powerSensor = new INA226(INA226_ADD,&Wire1);
     _powerSensor.begin();
     _powerSensor.setAverage(1);
-    _powerSensor.setMaxCurrentShunt(.8, 0.1, false);
+    _powerSensor.setMaxCurrentShunt(10, 0.0069, false);
 }
 
 /**
@@ -80,7 +82,7 @@ void GUIClass::InitLcd()
 
     _lcd.init();
     _lcd.setRotation(3);
-    _lcd.fillScreen(BG_COLOR);
+    _lcd.fillScreen(GUI_BG_COLOR);
     _lcd.clearDisplay();
 
     // allocate memory for the sprites
@@ -96,29 +98,29 @@ void GUIClass::InitButtons()
 {
     // create the volume and mute button
     _buttons[VOL_UP_B].initButtonUL(&_lcd, CNTRL_COL, VOL_UP_ROW, VOL_W, VOL_H, TFT_BLACK, TFT_WHITE, TFT_BLACK, "+", 3);
-    _buttons[MUTE_B].initButtonUL(&_lcd, CNTRL_COL, MUTE_ROW, VOL_W, MUTE_H, TFT_WHITE, BG_COLOR, TFT_WHITE, "M", 2);
+    _buttons[MUTE_B].initButtonUL(&_lcd, CNTRL_COL, MUTE_ROW, VOL_W, MUTE_H, TFT_WHITE, GUI_BG_COLOR, TFT_WHITE, "M", 2);
     _buttons[VOL_DOWN_B].initButtonUL(&_lcd, CNTRL_COL, VOL_DOWN_ROW, VOL_W, VOL_H, TFT_BLACK, TFT_WHITE, TFT_BLACK, "-", 3);
 
     _buttons[SKIP_BACK].initButtonUL(&_lcd, TAB_LINE_COL + 25, VOL_DOWN_ROW + 15, VOL_H, VOL_W - 10, TFT_BLACK, TFT_WHITE, TFT_BLACK, "<", 3);
     _buttons[SKIP_FORWARD].initButtonUL(&_lcd, TAB_LINE_COL + (2 * VOL_H) + 45, VOL_DOWN_ROW + 15, VOL_H, VOL_W - 10, TFT_BLACK, TFT_WHITE, TFT_BLACK, ">", 3);
-    _buttons[PLAY_PAUSE].initButtonUL(&_lcd, TAB_LINE_COL + (VOL_H) + 35, VOL_DOWN_ROW + 10, VOL_H, VOL_W, TFT_WHITE, BG_COLOR, TFT_WHITE, "Play|Pause", 1.2);
+    _buttons[PLAY_PAUSE].initButtonUL(&_lcd, TAB_LINE_COL + (VOL_H) + 35, VOL_DOWN_ROW + 10, VOL_H, VOL_W, TFT_WHITE, GUI_BG_COLOR, TFT_WHITE, "Play|Pause", 1.2);
 
     // home and settings tab
-    _buttons[HOME_B].initButtonUL(&_lcd, TAB_COL_HOME - 30, TAB_ROW, 94, 33, TFT_BLACK, TFT_BLACK, TFT_WHITE, "Home", 1.5);
-    _buttons[SETTINGS_B].initButtonUL(&_lcd, TAB_COL_SETTINGS - 10, TAB_ROW, 94, 33, TFT_BLACK, TFT_BLACK, TFT_WHITE, "Settings", 1.5);
+    _buttons[HOME_B].initButtonUL(&_lcd, TAB_COL_HOME - 30, TAB_ROW, 94, 33, GUI_BG_COLOR, GUI_BG_COLOR, TFT_WHITE, "Home", 1.5);
+    _buttons[SETTINGS_B].initButtonUL(&_lcd, TAB_COL_SETTINGS - 10, TAB_ROW, 94, 33, GUI_BG_COLOR, GUI_BG_COLOR, TFT_WHITE, "Settings", 1.5);
 
     // pair, transmit and reciever buttons
-    _buttons[PAIR_B].initButtonUL(&_lcd, S_COL_1, S_ROW_1, S_BTN_W, S_BTN_H, TFT_BLUE, BG_COLOR, TFT_WHITE, "Pair", 1.5);
-    _buttons[TX_B].initButtonUL(&_lcd, S_COL_2, S_ROW_1, S_BTN_W, S_BTN_H, TFT_RED, BG_COLOR, TFT_WHITE, "Tx", 1.5);
-    _buttons[RX_B].initButtonUL(&_lcd, S_COL_3, S_ROW_1, S_BTN_W, S_BTN_H, TFT_SKYBLUE, BG_COLOR, TFT_WHITE, "Rx", 1.5);
+    _buttons[PAIR_B].initButtonUL(&_lcd, S_COL_1, S_ROW_1, S_BTN_W, S_BTN_H, TFT_BLUE, GUI_BG_COLOR, TFT_WHITE, "Pair", 1.5);
+    _buttons[TX_B].initButtonUL(&_lcd, S_COL_2, S_ROW_1, S_BTN_W, S_BTN_H, TFT_RED, GUI_BG_COLOR, TFT_WHITE, "Tx", 1.5);
+    _buttons[RX_B].initButtonUL(&_lcd, S_COL_3, S_ROW_1, S_BTN_W, S_BTN_H, TFT_SKYBLUE, GUI_BG_COLOR, TFT_WHITE, "Rx", 1.5);
 
     // sleep options buttons
-    _buttons[DISP_OPT_30S_B].initButtonUL(&_lcd, S_COL_1, S_ROW_2, S_BTN_W, S_BTN_H, TFT_YELLOW, BG_COLOR, TFT_WHITE, "30s", 1.5);
-    _buttons[DISP_OPT_5M_B].initButtonUL(&_lcd, S_COL_2, S_ROW_2, S_BTN_W, S_BTN_H, TFT_YELLOW, BG_COLOR, TFT_WHITE, "5m", 1.5);
-    _buttons[DISP_OPT_OFF_B].initButtonUL(&_lcd, S_COL_3, S_ROW_2, S_BTN_W, S_BTN_H, TFT_YELLOW, BG_COLOR, TFT_WHITE, "Off", 1.5);
+    _buttons[DISP_OPT_30S_B].initButtonUL(&_lcd, S_COL_1, S_ROW_2, S_BTN_W, S_BTN_H, TFT_YELLOW, GUI_BG_COLOR, TFT_WHITE, "30s", 1.5);
+    _buttons[DISP_OPT_5M_B].initButtonUL(&_lcd, S_COL_2, S_ROW_2, S_BTN_W, S_BTN_H, TFT_YELLOW, GUI_BG_COLOR, TFT_WHITE, "5m", 1.5);
+    _buttons[DISP_OPT_OFF_B].initButtonUL(&_lcd, S_COL_3, S_ROW_2, S_BTN_W, S_BTN_H, TFT_YELLOW, GUI_BG_COLOR, TFT_WHITE, "Off", 1.5);
 
     // slider for brightness
-    _buttons[BRIGHT_SLIDER_B].initButtonUL(&_lcd, S_COL_1, S_ROW_3, BRIGHT_SLIDER_WIDTH, S_BTN_H, TFT_WHITE, BG_COLOR, TFT_WHITE, "Brightness");
+    _buttons[BRIGHT_SLIDER_B].initButtonUL(&_lcd, S_COL_1, S_ROW_3, BRIGHT_SLIDER_WIDTH, S_BTN_H, TFT_WHITE, GUI_BG_COLOR, TFT_WHITE, "Brightness");
 }
 
 /**
@@ -136,7 +138,7 @@ void GUIClass::DrawButtons()
     _lcd.drawLine(TAB_LINE_COL, TAB_LINE_ROW + 1, TAB_LINE_COL_END, TAB_LINE_ROW + 1, TFT_WHITE);
 
     // cover the setting/home view buttons
-    _lcd.fillRect(TAB_LINE_COL, TAB_COVER_ROW, TAB_COVER_RECT_W, TAB_COVER_RECT_H, BG_COLOR); // Cover home tab stuff
+    _lcd.fillRect(TAB_LINE_COL, TAB_COVER_ROW, TAB_COVER_RECT_W, TAB_COVER_RECT_H, GUI_BG_COLOR); // Cover home tab stuff
 
     if (_guiView == HOME_VIEW)
     {
@@ -165,7 +167,7 @@ void GUIClass::ShowBTMode()
 {
     _lcd.setTextSize(1);
     _lcd.setTextColor(TFT_WHITE);
-    _lcd.fillRect(MENU_BT_TEXT_COL, 0, MENU_BT_COVER_RECT_W, MENU_BT_COVER_RECT_H, BG_COLOR);
+    _lcd.fillRect(MENU_BT_TEXT_COL, 0, MENU_BT_COVER_RECT_W, MENU_BT_COVER_RECT_H, GUI_BG_COLOR);
     if (_btMode == TRANSMITTER_M)
     {
         _lcd.setTextColor(TFT_RED);
@@ -424,7 +426,7 @@ void GUIClass::RefreshData()
     if (_messageOn && millis() - _messageTime > 750)
     {
         _messageOn = false;
-        _lcd.fillRect(200, 0, 230, 13, BG_COLOR);
+        _lcd.fillRect(200, 0, 230, 13, GUI_BG_COLOR);
     }
 
     // check if we need to turn the screen off
@@ -444,13 +446,14 @@ void GUIClass::RefreshData()
 
     if (millis() - _lastGraphics > 150)
     {
-        static float voltageReading = MIN_BATTERY_VOLTAGE;
+        float voltageReading = _powerSensor.getBusVoltage();
+        float currentReading = _powerSensor.getCurrent_mA();
 
         if (_guiView == HOME_VIEW)
         {
             // float voltageReading = (float)random(0, 2) * 1.13 + 17.5;
             // static float voltageReading = MIN_BATTERY_VOLTAGE;
-            float currentReading = (float)random(-2, 2) * 1.11 + 6;
+            // float currentReading = (float)random(-2, 2) * 1.11 + 6;
 
             DrawVoltageGauge(voltageReading);
             DrawCurrentGauge(currentReading);
@@ -460,11 +463,11 @@ void GUIClass::RefreshData()
             // _lastGraphics = millis();
         }
 
-        if (voltageReading + .1 > MAX_BATTERY_VOLTAGE)
-        {
-            voltageReading = MIN_BATTERY_VOLTAGE;
-        }
-        voltageReading += .1;
+        // if (voltageReading + .1 > MAX_BATTERY_VOLTAGE)
+        // {
+        //     voltageReading = MIN_BATTERY_VOLTAGE;
+        // }
+        // voltageReading += .1;
 
         DrawBatteryPercentage(voltageReading);
         _lastGraphics = millis();
@@ -479,7 +482,7 @@ void GUIClass::DrawBatteryPercentage(float rawVolage)
 {
     _lcd.setTextSize(1);
     _lcd.setTextColor(TFT_WHITE);
-    _lcd.fillRect(MENU_BATT_TEXT_COL, 0, MENU_BATT_COVER_RECT_W, MENU_BATT_COVER_RECT_H, BG_COLOR);
+    _lcd.fillRect(MENU_BATT_TEXT_COL, 0, MENU_BATT_COVER_RECT_W, MENU_BATT_COVER_RECT_H, GUI_BG_COLOR);
 
     float batteryPercent = mapf(rawVolage, MIN_BATTERY_VOLTAGE, MAX_BATTERY_VOLTAGE, 0, 100);
     char buffer[20];
@@ -493,7 +496,7 @@ void GUIClass::DrawBatteryPercentage(float rawVolage)
 void GUIClass::DisplayMenuMessage(String message)
 {
     _lcd.setTextSize(1);
-    _lcd.fillRect(MENU_MSG_TEXT_COL, 0, MENU_MSG_COVER_RECT_W, MENU_MSG_COVER_RECT_H, BG_COLOR);
+    _lcd.fillRect(MENU_MSG_TEXT_COL, 0, MENU_MSG_COVER_RECT_W, MENU_MSG_COVER_RECT_H, GUI_BG_COLOR);
     _lcd.setTextColor(TFT_GOLD);
     _lcd.setCursor(MENU_MSG_TEXT_COL, MENU_TEXT_ROW);
     _lcd.print(message);
@@ -744,7 +747,8 @@ void GUIClass::DrawVoltageGauge(float rpm_input)
     const int angle0 = 135;          // 225
     const int angle1 = angle0 + 270; // 315
 
-    _spriteBattery.clear(BG_COLOR);
+    _spriteBattery.clear(GUI_BG_COLOR);
+    _spriteBattery.setTextColor(TFT_WHITE,GUI_BG_COLOR);
     _spriteBattery.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small, out_radius_small, angle0, angle1, TFT_WHITE);
     _spriteBattery.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small - 1, out_radius_small + 1, angle0, angle1, TFT_WHITE);
     _spriteBattery.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small - 2, out_radius_small + 2, angle0, angle1, TFT_WHITE);
@@ -801,12 +805,14 @@ void GUIClass::DrawCurrentGauge(float rpm_input)
     const int sprite_topCircleDataRow = 60 - 8;
     const int angle0 = 135;          // 225
     const int angle1 = angle0 + 270; // 315
-    _spriteCurrent.clear(BG_COLOR);
+    _spriteCurrent.clear(GUI_BG_COLOR);
+    _spriteCurrent.setTextColor(TFT_WHITE,GUI_BG_COLOR);
     _spriteCurrent.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small, out_radius_small, angle0, angle1, TFT_WHITE);
     _spriteCurrent.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small - 1, out_radius_small + 1, angle0, angle1, TFT_WHITE);
     _spriteCurrent.drawArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small - 2, out_radius_small + 2, angle0, angle1, TFT_WHITE);
 
-    float calculatedAngle = mapf(rpm_input, 0, 12, angle0, angle1);
+
+    float calculatedAngle = mapf(rpm_input, 0, 3000, angle0, angle1);
     if (calculatedAngle >= angle1)
     {
         calculatedAngle = angle1 - 1;
@@ -817,9 +823,9 @@ void GUIClass::DrawCurrentGauge(float rpm_input)
     }
     _spriteCurrent.setTextSize(2.0);
     _spriteCurrent.setCursor(41, sprite_topCircleDataRow + 2);
-    _spriteCurrent.printf("%05.2f", rpm_input);
+    _spriteCurrent.printf("%05.1f", rpm_input);
     _spriteCurrent.setCursor(48, sprite_topCircleDataRow + 28);
-    _spriteCurrent.print("Amps");
+    _spriteCurrent.print("mAmp");
 
     // _spriteCurrent.fillArc(_spriteCurrentSize / 2, _spriteCurrentSize / 2, in_radius_small + 2, out_radius_small - 2, angle0 + 1, calculatedAngle, TFT_BLUE);
     _spriteCurrent.fillArc(sprite_topCircleGuageSize / 2, sprite_topCircleGuageSize / 2, in_radius_small + 1, out_radius_small - 1, angle0 + 1, calculatedAngle, TFT_RED);
@@ -838,8 +844,8 @@ void GUIClass::DrawCurrentGauge(float rpm_input)
 
     // right for marking max value
     xCoord = sin(radians(angle1 + 15 + 90)) * middleRadius + 70;
-    _spriteCurrent.setCursor(xCoord, yCoord);
-    _spriteCurrent.print(12);
+    _spriteCurrent.setCursor(xCoord-20, yCoord);
+    _spriteCurrent.print(3000);
     _spriteCurrent.pushSprite(&_lcd, S_COL_1 + SPRITE_GUAGE_WIDTH + 10, H_GUAGE_ROW);
 }
 
